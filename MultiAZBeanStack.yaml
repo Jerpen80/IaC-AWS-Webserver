@@ -1,0 +1,458 @@
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  RouteTableTest:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref VPCTest
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 5eef5e90-de67-4850-8e70-1bb6a3c1022a
+  EC2IG3TTU0:
+    Type: 'AWS::EC2::InternetGateway'
+    Properties: {}
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 0522b7af-b045-48b1-931c-fbe965c3dfe8
+  EC2VPCG47QAN:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      VpcId: !Ref VPCTest
+      InternetGatewayId: !Ref EC2IG3TTU0
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 0d361b8e-92af-4f1c-8b47-8ec74610d679
+  RouteTest:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      RouteTableId: !Ref RouteTableTest
+      GatewayId: !Ref EC2IG3TTU0
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 557a8003-937c-4da0-9efe-62633e031b9a
+    DependsOn:
+      - EC2IG3TTU0
+  EC2SRTA508EG:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId: !Ref RouteTableTest
+      SubnetId: !Ref PublicSubNet1
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 59b2db40-e79d-435b-a8e3-24604ad5bc23
+  VPCTest:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      EnableDnsSupport: 'true'
+      EnableDnsHostnames: 'true'
+      CidrBlock: 10.0.0.0/16
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 125ffd16-8bf8-4c8e-884a-91ea73cbf404
+  Malware:
+    Type: 'AWS::ElasticBeanstalk::Application'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: c6f816f4-6efc-4fc5-a739-a6be7f501885
+    Properties:
+      Description: AWS Elastic Beanstalk Sample Node.js Application
+    DependsOn:
+      - PublicSubNet3
+      - PublicSubNet2
+      - PublicSubNet1
+  SampleEnvironment:
+    Type: 'AWS::ElasticBeanstalk::Environment'
+    Properties:
+      Description: AWS Elastic Beanstalk Environment running Sample Node.js Application
+      ApplicationName: !Ref Malware
+      TemplateName: !Ref SampleConfigurationTemplate
+      VersionLabel: !Ref SampleApplicationVersion
+      OptionSettings:
+        - Namespace: 'aws:autoscaling:launchconfiguration'
+          OptionName: EC2KeyName
+          Value: !Ref KeyName
+        - Namespace: 'aws:elasticbeanstalk:environment'
+          OptionName: LoadBalancerType
+          Value: application
+        - Namespace: 'aws:ec2:vpc'
+          OptionName: VPCId
+          Value: !Ref VPCTest
+        - Namespace: 'aws:ec2:vpc'
+          OptionName: Subnets
+          Value: !Join 
+            - ','
+            - - !Ref PublicSubNet1
+              - !Ref PublicSubNet2
+        - Namespace: 'aws:ec2:vpc'
+          OptionName: ELBSubnets
+          Value: !Join 
+            - ','
+            - - !Ref PublicSubNet1
+              - !Ref PublicSubNet2
+        - Namespace: 'aws:ec2:vpc'
+          OptionName: AssociatePublicIpAddress
+          Value: true
+        - Namespace: 'aws:autoscaling:asg'
+          OptionName: MinSize
+          Value: 2
+        - Namespace: 'aws:autoscaling:asg'
+          OptionName: MaxSize
+          Value: !Ref MaxMachines
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 6d9a03e2-f302-40a1-8a24-2ac27a9c667a
+  SampleApplicationVersion:
+    Type: 'AWS::ElasticBeanstalk::ApplicationVersion'
+    Properties:
+      Description: Version 1.0
+      ApplicationName: !Ref Malware
+      SourceBundle:
+        S3Bucket: !Join 
+          - '-'
+          - - elasticbeanstalk-samples
+            - !Ref 'AWS::Region'
+        S3Key: nodejs-sample.zip
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 3b8d824b-a607-4352-a851-26e3ff3af679
+  SampleConfigurationTemplate:
+    Type: 'AWS::ElasticBeanstalk::ConfigurationTemplate'
+    Properties:
+      ApplicationName: !Ref Malware
+      Description: SSH access to Node.JS Application
+      SolutionStackName: 64bit Amazon Linux 2 v5.4.4 running Node.js 14
+      OptionSettings:
+        - Namespace: 'aws:autoscaling:launchconfiguration'
+          OptionName: EC2KeyName
+          Value: !Ref KeyName
+        - Namespace: 'aws:autoscaling:launchconfiguration'
+          OptionName: IamInstanceProfile
+          Value: >-
+            arn:aws:iam::307624291587:instance-profile/aws-elasticbeanstalk-ec2-role
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 139cb43e-81ad-44fb-901e-a4bd8cd6de1e
+  PublicSubNet2:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref VPCTest
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: eu-central-1b
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: aadd144c-137e-456f-b406-1573aae33aa8
+  PublicSubNet1:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref VPCTest
+      CidrBlock: 10.0.0.0/24
+      AvailabilityZone: eu-central-1a
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 582e892e-11e2-4d52-878a-488904da4a74
+  PublicSubNet3:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref VPCTest
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: eu-central-1c
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 4f902c52-de06-487a-815d-9022c3738044
+  EC2SRTA4NGGW:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId: !Ref RouteTableTest
+      SubnetId: !Ref PublicSubNet3
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: c4cb0682-8211-4aaf-82e9-94586e1e104b
+  EC2SRTA53BIF:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId: !Ref RouteTableTest
+      SubnetId: !Ref PublicSubNet2
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: cbbc8e5b-ce66-4d34-8899-82bd3b5638fa
+  EC2Test:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !FindInMap 
+        - AWSRegionArch2AMI
+        - !Ref 'AWS::Region'
+        - !FindInMap 
+          - AWSInstanceType2Arch
+          - !Ref InstanceType
+          - Arch
+      KeyName: !Ref KeyName
+      NetworkInterfaces:
+        - GroupSet:
+            - !Ref SecurityGroupTest
+          AssociatePublicIpAddress: 'true'
+          DeviceIndex: '0'
+          DeleteOnTermination: 'true'
+          SubnetId: !Ref PublicSubNet3
+      UserData: !Base64 
+        'Fn::Join':
+          - ''
+          - - |
+              #!/bin/bash -xe
+            - |
+              yum install -y aws-cfn-bootstrap
+            - |
+              # Install the files and packages from the metadata
+            - '/opt/aws/bin/cfn-init -v '
+            - '         --stack '
+            - !Ref 'AWS::StackName'
+            - '         --resource EC2Test '
+            - '         --configsets All '
+            - '         --region '
+            - !Ref 'AWS::Region'
+            - |+
+
+            - |
+              # Signal the status from cfn-init
+            - '/opt/aws/bin/cfn-signal -e $? '
+            - '         --stack '
+            - !Ref 'AWS::StackName'
+            - '         --resource EC2Test '
+            - '         --region '
+            - !Ref 'AWS::Region'
+            - ''
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 47aedd3d-f219-4b47-8137-4c2046a5e905
+      'AWS::CloudFormation::Init':
+        configSets:
+          All:
+            - ConfigureSampleApp
+        ConfigureSampleApp:
+          packages:
+            yum:
+              httpd: []
+          files:
+            /var/www/html/index.html:
+              content: !Join 
+                - |+
+
+                - - >-
+                    <html> <head>
+                        <title>Elastic Beanstalk</title>
+                        <style>
+                        body {
+                        color: #ffffff;
+                            font-family: Arial, sans-serif;
+                            font-size:14px;
+                            -moz-transition-property: text-shadow;
+                            -moz-transition-duration: 4s;
+                            -webkit-transition-property: text-shadow;
+                            -webkit-transition-duration: 4s;
+                            text-shadow: none;
+                          }
+                          body.blurry {
+                            -moz-transition-property: text-shadow;
+                            -moz-transition-duration: 4s;
+                            -webkit-transition-property: text-shadow;
+                            -webkit-transition-duration: 4s;
+                            text-shadow: #fff 0px 0px 25px;
+                          }
+                          a {
+                            color: #55aaff;
+                          }
+                          .textColumn, .linksColumn {
+                            padding: 2em;
+                          }
+                          .textColumn {
+                            position: absolute;
+                            top: 0px;
+                            right: 50%;
+                            bottom: 0px;
+                            left: 0px;
+
+                            text-align: right;
+                            padding-top: 11em;
+                            background-color: #73A53E;
+
+                          }
+                          .textColumn p {
+                            width: 75%;
+                            float:right;
+                          }
+                          .linksColumn {
+                            position: absolute;
+                            top:0px;
+                            right: 0px;
+                            bottom: 0px;
+                            left: 50%;
+
+                            background-color: #33342D;
+                          }
+
+                          h1 {
+                            color: #33342D;
+                            font-size: 500%;
+                            font-weight: normal;
+                            margin-bottom: 0em;
+                          }
+                          h2 {
+                            font-size: 200%;
+                            font-weight: normal;
+                            margin-bottom: 0em;
+                          }
+                          ul {
+                            padding-left: 1em;
+                            margin: 0px;
+                          }
+                          li {
+                            margin: 1em 0em;
+                          }
+                        </style>
+                      </head>
+                             <SCRIPT language="Javascript">
+                     function WillekeurigGetal(max)
+                    { return (Math.floor(Math.random()*max))+1;
+
+                    }
+                     function getal()  
+                          { 
+                         WillekeurigGetal(10) 
+                      keuze = document.formulier.nummers.selectedIndex
+                      var cijfer=document.formulier.nummers[keuze].value;
+                      minder=WillekeurigGetal(10);
+                      goed=minder-1;
+                      if (keuze==goed)
+                       {alert ('Goed zo!! het getal was inderdaad '+minder);}
+                       else
+                       {alert ('jammer.....het getal was '+minder);}
+                      
+                      }
+
+                     
+                     
+                     
+                      </SCRIPT> 
+
+                     
+                     
+                     
+                      </SCRIPT> 
+                       </HEAD>
+                       
+                       
+                      
+                       <BODY style="background-color:blue;">
+
+                       </BODY>
+                      <body>
+                        <div class="textColumn">
+                          <h1>Team Cloudiez!!</h1>
+                          <p>Nothing but the best</p>
+                          
+                        </div>
+                        <div class="linksColumn">
+                          <h2>Guess that number!</h2>
+                             <CENTER>     
+                       <FONT COLOR="white">
+                       <div id=heading><b><big>Raad het getal!</big><BR><p></p>
+                       <big>kies een getal uit de lijst hieronder:</big></b></div>
+                             
+                         <FORM NAME="formulier">
+                    <SELECT NAME="nummers" onChange="getal()"> <OPTION VALUE="
+                    1"> 1 <OPTION VALUE=" 2"> 2 <OPTION VALUE=" 3"> 3 <OPTION
+                    VALUE=" 4"> 4  <OPTION VALUE=" 5"> 5 <OPTION VALUE=" 6"> 6
+                    <OPTION VALUE=" 7"> 7 <OPTION VALUE=" 8"> 8 <OPTION VALUE="
+                    9"> 9 <OPTION VALUE=" 10"> 10 </SELECT> </FORM>
+                       <div id=heading><b><big>(c) Jeroen Penders</big>
+                       </b></div>
+
+
+                    </CENTER>
+
+                          <ul>
+                            
+                          </ul>
+                        </div>
+                      </body>
+                    </html>
+              mode: '000644'
+              owner: root
+              group: root
+          services:
+            sysvinit:
+              httpd:
+                enabled: 'true'
+                ensureRunning: 'true'
+  SecurityGroupTest:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref VPCTest
+      GroupDescription: Allow access from HTTP and SSH traffic
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: !Ref SSHLocation
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: bd54a7ed-f832-481a-9357-eae1c5e383d4
+  EC2VPCG3Z66U:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      InternetGatewayId: !Ref EC2IG3TTU0
+      VpcId: !Ref VPCTest
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 40bef010-4873-41ac-88e2-1eb11a18909e
+Outputs:
+  Best:
+    Value: !Join 
+      - ''
+      - - Malware
+    Description: It just works! Team Cloudiez
+Parameters:
+  InstanceType:
+    Description: WebServer EC2 instance type
+    Type: String
+    Default: t2.small
+    AllowedValues:
+      - t2.nano
+      - t2.micro
+      - t2.small
+    ConstraintDescription: must be a valid EC2 instance type.
+  KeyName:
+    Description: Name of an EC2 KeyPair to enable SSH access to the instance.
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+  SSHLocation:
+    Description: ' The IP address range that can be used to access the web server using SSH.'
+    Type: String
+    MinLength: '9'
+    MaxLength: '18'
+    Default: 0.0.0.0/0
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+  MaxMachines:
+    Description: ' Select the maximum number of instances the autoscaling can scale to. '
+    Type: Number
+    MinValue: 2
+    MaxValue: 10
+    Default: 4
+    ConstraintDescription: Must be a number between 2(min) and 10(max).
+Mappings:
+  AWSInstanceType2Arch:
+    t2.nano:
+      Arch: HVM64
+    t2.micro:
+      Arch: HVM64
+    t2.small:
+      Arch: HVM64
+  AWSRegionArch2AMI:
+    eu-central-1:
+      HVM64: ami-0233214e13e500f77
+      HVMG2: ami-06223d46a6d0661c7
